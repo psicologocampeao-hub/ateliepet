@@ -1500,6 +1500,8 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"001e6b648c","urls":{"ass
 (function() {
   function initCarousels() {
     if (typeof Swiper === 'undefined') return;
+
+    // image-carousel widgets
     var carousels = document.querySelectorAll('.elementor-image-carousel-wrapper.swiper:not(.swiper-initialized)');
     carousels.forEach(function(el) {
       var widget = el.closest('[data-widget_type="image-carousel.default"]');
@@ -1527,6 +1529,45 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"001e6b648c","urls":{"ass
         rtl: isRtl,
         allowTouchMove: true,
         grabCursor: true,
+        breakpoints: {
+          0:    { slidesPerView: slidesMobile, spaceBetween: spacing },
+          768:  { slidesPerView: slidesTablet,  spaceBetween: spacing },
+          1025: { slidesPerView: slidesDesktop, spaceBetween: spacing },
+        }
+      });
+    });
+
+    // nested-carousel widgets (second block with dog photo rows)
+    var nested = document.querySelectorAll('.e-n-carousel.swiper:not(.swiper-initialized)');
+    nested.forEach(function(el) {
+      var widget = el.closest('[data-widget_type="nested-carousel.default"]');
+      if (!widget) return;
+      var settings = {};
+      try { settings = JSON.parse(widget.getAttribute('data-settings').replace(/&quot;/g, '"')); } catch(e) {}
+
+      var slidesDesktop = parseInt(settings.slides_to_show) || 3;
+      var slidesTablet  = parseInt(settings.slides_to_show_tablet) || 2;
+      var slidesMobile  = parseInt(settings.slides_to_show_mobile) || 1;
+      var speed   = parseInt(settings.speed) || 500;
+      var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size) ? parseInt(settings.image_spacing_custom.size) : 20;
+
+      var navNext = widget.querySelector('.swiper-button-next, .e-n-carousel-navigation-next');
+      var navPrev = widget.querySelector('.swiper-button-prev, .e-n-carousel-navigation-prev');
+      var paginationEl = widget.querySelector('.swiper-pagination');
+
+      new Swiper(el, {
+        slidesPerView: slidesDesktop,
+        spaceBetween: spacing,
+        loop: settings.infinite === 'yes',
+        speed: speed,
+        autoplay: settings.autoplay === 'yes' ? {
+          delay: parseInt(settings.autoplay_speed) || 3000,
+          disableOnInteraction: false,
+        } : false,
+        allowTouchMove: true,
+        grabCursor: true,
+        navigation: navNext ? { nextEl: navNext, prevEl: navPrev } : false,
+        pagination: paginationEl ? { el: paginationEl, clickable: true } : false,
         breakpoints: {
           0:    { slidesPerView: slidesMobile, spaceBetween: spacing },
           768:  { slidesPerView: slidesTablet,  spaceBetween: spacing },
