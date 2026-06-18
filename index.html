@@ -1498,12 +1498,27 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"001e6b648c","urls":{"ass
 <script src="assets/js/elements-handlers.min.js" id="pro-elements-handlers-js"></script>
 <script>
 (function() {
+  function enableDrag(el) {
+    // If Elementor already initialized this Swiper, patch the existing instance
+    if (el.swiper) {
+      el.swiper.params.allowTouchMove = true;
+      el.swiper.params.grabCursor = true;
+      el.swiper.allowTouchMove = true;
+      el.swiper.grabCursor = true;
+      el.swiper.update();
+      return true;
+    }
+    return false;
+  }
+
   function initCarousels() {
     if (typeof Swiper === 'undefined') return;
 
-    // image-carousel widgets
-    var carousels = document.querySelectorAll('.elementor-image-carousel-wrapper.swiper:not(.swiper-initialized)');
+    // image-carousel widgets — handle both initialized (patch) and not-yet-initialized (create)
+    var carousels = document.querySelectorAll('.elementor-image-carousel-wrapper.swiper');
     carousels.forEach(function(el) {
+      if (enableDrag(el)) return; // already initialized by Elementor, just patched
+
       var widget = el.closest('[data-widget_type="image-carousel.default"]');
       if (!widget) return;
       var settings = {};
@@ -1537,9 +1552,11 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"001e6b648c","urls":{"ass
       });
     });
 
-    // nested-carousel widgets (second block with dog photo rows)
-    var nested = document.querySelectorAll('.e-n-carousel.swiper:not(.swiper-initialized)');
+    // nested-carousel widgets
+    var nested = document.querySelectorAll('.e-n-carousel.swiper');
     nested.forEach(function(el) {
+      if (enableDrag(el)) return;
+
       var widget = el.closest('[data-widget_type="nested-carousel.default"]');
       if (!widget) return;
       var settings = {};
@@ -1551,8 +1568,8 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"001e6b648c","urls":{"ass
       var speed   = parseInt(settings.speed) || 500;
       var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size) ? parseInt(settings.image_spacing_custom.size) : 20;
 
-      var navNext = widget.querySelector('.swiper-button-next, .e-n-carousel-navigation-next');
-      var navPrev = widget.querySelector('.swiper-button-prev, .e-n-carousel-navigation-prev');
+      var navNext = widget.querySelector('.elementor-swiper-button-next');
+      var navPrev = widget.querySelector('.elementor-swiper-button-prev');
       var paginationEl = widget.querySelector('.swiper-pagination');
 
       new Swiper(el, {
@@ -1560,10 +1577,7 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"001e6b648c","urls":{"ass
         spaceBetween: spacing,
         loop: settings.infinite === 'yes',
         speed: speed,
-        autoplay: settings.autoplay === 'yes' ? {
-          delay: parseInt(settings.autoplay_speed) || 3000,
-          disableOnInteraction: false,
-        } : false,
+        autoplay: false,
         allowTouchMove: true,
         grabCursor: true,
         navigation: navNext ? { nextEl: navNext, prevEl: navPrev } : false,
@@ -1577,12 +1591,18 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"001e6b648c","urls":{"ass
     });
   }
 
+  function runLate() {
+    // Run once at load, then again after 800ms to catch any late Elementor initialization
+    initCarousels();
+    setTimeout(initCarousels, 800);
+  }
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initCarousels);
   } else {
     initCarousels();
   }
-  window.addEventListener('load', initCarousels);
+  window.addEventListener('load', runLate);
 })();
 </script>
 	</body>
