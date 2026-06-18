@@ -1498,111 +1498,104 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"001e6b648c","urls":{"ass
 <script src="assets/js/elements-handlers.min.js" id="pro-elements-handlers-js"></script>
 <script>
 (function() {
-  function enableDrag(el) {
-    // If Elementor already initialized this Swiper, patch the existing instance
+  var SELECTORS = '.elementor-image-carousel-wrapper.swiper, .e-n-carousel.swiper';
+
+  function patchDrag(el) {
     if (el.swiper) {
       el.swiper.params.allowTouchMove = true;
-      el.swiper.params.grabCursor = true;
-      el.swiper.allowTouchMove = true;
-      el.swiper.grabCursor = true;
+      el.swiper.params.grabCursor     = true;
+      el.swiper.allowTouchMove        = true;
+      el.swiper.grabCursor            = true;
       el.swiper.update();
-      return true;
     }
-    return false;
   }
 
-  function initCarousels() {
+  function buildSwiper(el) {
     if (typeof Swiper === 'undefined') return;
+    if (el.swiper) { patchDrag(el); return; }
 
-    // image-carousel widgets — handle both initialized (patch) and not-yet-initialized (create)
-    var carousels = document.querySelectorAll('.elementor-image-carousel-wrapper.swiper');
-    carousels.forEach(function(el) {
-      if (enableDrag(el)) return; // already initialized by Elementor, just patched
+    var isNested = el.classList.contains('e-n-carousel');
+    var widgetType = isNested ? 'nested-carousel.default' : 'image-carousel.default';
+    var widget = el.closest('[data-widget_type="' + widgetType + '"]');
+    if (!widget) return;
 
-      var widget = el.closest('[data-widget_type="image-carousel.default"]');
-      if (!widget) return;
-      var settings = {};
-      try { settings = JSON.parse(widget.getAttribute('data-settings').replace(/&quot;/g, '"')); } catch(e) {}
+    var settings = {};
+    try { settings = JSON.parse(widget.getAttribute('data-settings').replace(/&quot;/g, '"')); } catch(e) {}
 
-      var slidesDesktop = parseInt(settings.slides_to_show) || 5;
-      var slidesTablet  = parseInt(settings.slides_to_show_tablet) || 3;
-      var slidesMobile  = parseInt(settings.slides_to_show_mobile) || 2;
-      var speed   = parseInt(settings.speed) || 5000;
-      var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size) ? parseInt(settings.image_spacing_custom.size) : 20;
-      var isRtl   = el.getAttribute('dir') === 'rtl';
+    var slidesDesktop = parseInt(settings.slides_to_show) || (isNested ? 3 : 5);
+    var slidesTablet  = parseInt(settings.slides_to_show_tablet)  || (isNested ? 2 : 3);
+    var slidesMobile  = parseInt(settings.slides_to_show_mobile)  || (isNested ? 1 : 2);
+    var speed   = parseInt(settings.speed) || (isNested ? 500 : 5000);
+    var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size)
+                  ? parseInt(settings.image_spacing_custom.size) : 20;
+    var isRtl   = el.getAttribute('dir') === 'rtl';
 
-      new Swiper(el, {
-        slidesPerView: slidesDesktop,
-        spaceBetween: spacing,
-        loop: settings.infinite === 'yes',
-        speed: speed,
-        autoplay: settings.autoplay === 'yes' ? {
-          delay: parseInt(settings.autoplay_speed) || 0,
-          disableOnInteraction: false,
-          reverseDirection: isRtl,
-        } : false,
-        rtl: isRtl,
-        allowTouchMove: true,
-        grabCursor: true,
-        breakpoints: {
-          0:    { slidesPerView: slidesMobile, spaceBetween: spacing },
-          768:  { slidesPerView: slidesTablet,  spaceBetween: spacing },
-          1025: { slidesPerView: slidesDesktop, spaceBetween: spacing },
-        }
-      });
-    });
+    var cfg = {
+      slidesPerView: slidesDesktop,
+      spaceBetween:  spacing,
+      loop:          settings.infinite === 'yes',
+      speed:         speed,
+      allowTouchMove: true,
+      grabCursor:    true,
+      breakpoints: {
+        0:    { slidesPerView: slidesMobile, spaceBetween: spacing },
+        768:  { slidesPerView: slidesTablet,  spaceBetween: spacing },
+        1025: { slidesPerView: slidesDesktop, spaceBetween: spacing },
+      }
+    };
 
-    // nested-carousel widgets
-    var nested = document.querySelectorAll('.e-n-carousel.swiper');
-    nested.forEach(function(el) {
-      if (enableDrag(el)) return;
-
-      var widget = el.closest('[data-widget_type="nested-carousel.default"]');
-      if (!widget) return;
-      var settings = {};
-      try { settings = JSON.parse(widget.getAttribute('data-settings').replace(/&quot;/g, '"')); } catch(e) {}
-
-      var slidesDesktop = parseInt(settings.slides_to_show) || 3;
-      var slidesTablet  = parseInt(settings.slides_to_show_tablet) || 2;
-      var slidesMobile  = parseInt(settings.slides_to_show_mobile) || 1;
-      var speed   = parseInt(settings.speed) || 500;
-      var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size) ? parseInt(settings.image_spacing_custom.size) : 20;
-
+    if (!isNested) {
+      cfg.rtl = isRtl;
+      cfg.autoplay = settings.autoplay === 'yes' ? {
+        delay: parseInt(settings.autoplay_speed) || 0,
+        disableOnInteraction: false,
+        reverseDirection: isRtl,
+      } : false;
+    } else {
+      cfg.autoplay = false;
       var navNext = widget.querySelector('.elementor-swiper-button-next');
       var navPrev = widget.querySelector('.elementor-swiper-button-prev');
       var paginationEl = widget.querySelector('.swiper-pagination');
+      if (navNext) cfg.navigation = { nextEl: navNext, prevEl: navPrev };
+      if (paginationEl) cfg.pagination = { el: paginationEl, clickable: true };
+    }
 
-      new Swiper(el, {
-        slidesPerView: slidesDesktop,
-        spaceBetween: spacing,
-        loop: settings.infinite === 'yes',
-        speed: speed,
-        autoplay: false,
-        allowTouchMove: true,
-        grabCursor: true,
-        navigation: navNext ? { nextEl: navNext, prevEl: navPrev } : false,
-        pagination: paginationEl ? { el: paginationEl, clickable: true } : false,
-        breakpoints: {
-          0:    { slidesPerView: slidesMobile, spaceBetween: spacing },
-          768:  { slidesPerView: slidesTablet,  spaceBetween: spacing },
-          1025: { slidesPerView: slidesDesktop, spaceBetween: spacing },
-        }
-      });
+    new Swiper(el, cfg);
+  }
+
+  // MutationObserver: patch immediately when Elementor adds swiper-initialized
+  var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      if (m.attributeName === 'class' && m.target.classList.contains('swiper-initialized')) {
+        patchDrag(m.target);
+      }
+    });
+  });
+
+  function setupAll() {
+    document.querySelectorAll(SELECTORS).forEach(function(el) {
+      // Watch for future swiper-initialized additions by Elementor
+      observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+      // Handle already-initialized ones
+      if (el.classList.contains('swiper-initialized')) {
+        patchDrag(el);
+      } else {
+        buildSwiper(el);
+      }
     });
   }
 
-  function runLate() {
-    // Run once at load, then again after 800ms to catch any late Elementor initialization
-    initCarousels();
-    setTimeout(initCarousels, 800);
-  }
-
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCarousels);
+    document.addEventListener('DOMContentLoaded', setupAll);
   } else {
-    initCarousels();
+    setupAll();
   }
-  window.addEventListener('load', runLate);
+  // Also run at load + after delay to catch anything Elementor initializes late
+  window.addEventListener('load', function() {
+    setupAll();
+    setTimeout(setupAll, 1000);
+    setTimeout(setupAll, 2500);
+  });
 })();
 </script>
 	</body>
