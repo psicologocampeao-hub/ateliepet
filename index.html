@@ -1496,5 +1496,53 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"001e6b648c","urls":{"ass
 </script>
 <script src="assets/js/elementor-pro-frontend.min.js" id="elementor-pro-frontend-js"></script>
 <script src="assets/js/elements-handlers.min.js" id="pro-elements-handlers-js"></script>
+<script>
+(function() {
+  function initCarousels() {
+    if (typeof Swiper === 'undefined') return;
+    var carousels = document.querySelectorAll('.elementor-image-carousel-wrapper.swiper:not(.swiper-initialized)');
+    carousels.forEach(function(el) {
+      var widget = el.closest('[data-widget_type="image-carousel.default"]');
+      if (!widget) return;
+      var settings = {};
+      try { settings = JSON.parse(widget.getAttribute('data-settings').replace(/&quot;/g, '"')); } catch(e) {}
+
+      var slidesDesktop = parseInt(settings.slides_to_show) || 5;
+      var slidesTablet  = parseInt(settings.slides_to_show_tablet) || 3;
+      var slidesMobile  = parseInt(settings.slides_to_show_mobile) || 2;
+      var speed   = parseInt(settings.speed) || 5000;
+      var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size) ? parseInt(settings.image_spacing_custom.size) : 20;
+      var isRtl   = el.getAttribute('dir') === 'rtl';
+
+      new Swiper(el, {
+        slidesPerView: slidesDesktop,
+        spaceBetween: spacing,
+        loop: settings.infinite === 'yes',
+        speed: speed,
+        autoplay: settings.autoplay === 'yes' ? {
+          delay: parseInt(settings.autoplay_speed) || 0,
+          disableOnInteraction: false,
+          reverseDirection: isRtl,
+        } : false,
+        rtl: isRtl,
+        allowTouchMove: true,
+        grabCursor: true,
+        breakpoints: {
+          0:    { slidesPerView: slidesMobile, spaceBetween: spacing },
+          768:  { slidesPerView: slidesTablet,  spaceBetween: spacing },
+          1025: { slidesPerView: slidesDesktop, spaceBetween: spacing },
+        }
+      });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCarousels);
+  } else {
+    initCarousels();
+  }
+  window.addEventListener('load', initCarousels);
+})();
+</script>
 	</body>
 </html>
