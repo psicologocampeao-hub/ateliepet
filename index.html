@@ -1652,5 +1652,20 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"001e6b648c","urls":{"ass
   });
 })();
 </script>
-	</body>
+	<script>
+(function() {
+  var els = document.querySelectorAll('h2.elementor-heading-title');
+  for (var i = 0; i < els.length; i++) {
+    if (els[i].textContent.indexOf('OFERTA ESPECIAL') !== -1) {
+      var now = new Date();
+      var day   = String(now.getDate()).padStart(2, '0');
+      var month = String(now.getMonth() + 1).padStart(2, '0');
+      var year  = now.getFullYear();
+      els[i].innerHTML = els[i].innerHTML.replace(/d{2}/d{2}/d{4}/, day + '/' + month + '/' + year);
+      break;
+    }
+  }
+})();
+</script>
+</body>
 </html>
