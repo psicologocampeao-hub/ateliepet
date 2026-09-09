@@ -513,7 +513,7 @@ src="https://www.facebook.com/tr?id=2131924144178323&ev=PageView&noscript=1"
 					maxHeight: 1200,
 					maxShadowOpacity: 0.5,
 					showCover: true,
-					usePortrait: isMobile,
+					usePortrait: false,
 					mobileScrollSupport: true,
 				});
 				pageFlip.loadFromImages(images);
@@ -1362,7 +1362,7 @@ src="https://www.facebook.com/tr?id=2131924144178323&ev=PageView&noscript=1"
 
 
 <div id="notif-compra" role="status" aria-live="polite">
-  <div class="thumb" id="notif-thumb"></div>
+  <div class="thumb" id="notif-thumb"><img id="notif-thumb-img" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:none;"></div>
   <div class="txt">
     <p class="linha1" id="notif-linha1"></p>
     <p class="linha2"><span class="bolinha"></span><span id="notif-linha2"></span></p>
@@ -1436,7 +1436,11 @@ src="https://www.facebook.com/tr?id=2131924144178323&ev=PageView&noscript=1"
   var encerrado = false;
   var timer = null;
 
-  if (IMAGEM_PRODUTO) elThumb.style.backgroundImage = 'url(' + IMAGEM_PRODUTO + ')';
+  var elThumbImg = document.getElementById('notif-thumb-img');
+  if (IMAGEM_PRODUTO && elThumbImg) {
+    elThumbImg.addEventListener('load', function () { elThumbImg.style.display = 'block'; });
+    elThumbImg.src = IMAGEM_PRODUTO;
+  }
 
   function aleatorio(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -1691,7 +1695,7 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     if (!isNested) {
       cfg.rtl = isRtl;
       cfg.autoplay = settings.autoplay === 'yes' ? {
-        delay: parseInt(settings.autoplay_speed) || 0,
+        delay: parseInt(settings.autoplay_speed) || 60,
         disableOnInteraction: false,
         pauseOnMouseEnter: settings.pause_on_hover === 'yes',
         reverseDirection: isRtl,
@@ -1751,6 +1755,10 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     var el = widget.querySelector('.elementor-image-carousel-wrapper.swiper');
     if (!el) return;
 
+    // Ja foi inicializado corretamente por nos (buildSwiper) - nao reiniciar
+    // do zero, isso so reseta a posicao/autoplay sem necessidade.
+    if (el.swiper && el.swiper.params && el.swiper.params.allowTouchMove) return;
+
     var settings = {};
     try { settings = JSON.parse(widget.getAttribute('data-settings').replace(/&quot;/g, '"')); } catch(e) {}
 
@@ -1772,7 +1780,7 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
       loop:          settings.infinite === 'yes',
       speed:         speed,
       autoplay: settings.autoplay === 'yes' ? {
-        delay: parseInt(settings.autoplay_speed) || 0,
+        delay: parseInt(settings.autoplay_speed) || 60,
         disableOnInteraction: false,
         reverseDirection: isRtl,
       } : false,
