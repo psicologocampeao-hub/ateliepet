@@ -512,7 +512,7 @@ src="https://www.facebook.com/tr?id=2131924144178323&ev=PageView&noscript=1"
 					minHeight: 350,
 					maxHeight: 1200,
 					maxShadowOpacity: 0.5,
-					showCover: true,
+					showCover: false,
 					usePortrait: false,
 					mobileScrollSupport: true,
 				});
@@ -1669,9 +1669,10 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     var settings = {};
     try { settings = JSON.parse(widget.getAttribute('data-settings').replace(/&quot;/g, '"')); } catch(e) {}
 
+    var hasArrows = settings.navigation === 'both' || settings.navigation === 'arrows';
     var slidesDesktop = parseInt(settings.slides_to_show) || 3;
     var slidesTablet  = parseInt(settings.slides_to_show_tablet)  || (isNested ? 2 : 3);
-    var slidesMobile  = parseInt(settings.slides_to_show_mobile)  || (isNested ? 1 : 2);
+    var slidesMobile  = parseInt(settings.slides_to_show_mobile)  || (isNested ? 1 : (hasArrows ? 1 : 2));
     var speed   = parseInt(settings.speed) || (isNested ? 500 : 5000);
     var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size)
                   ? parseInt(settings.image_spacing_custom.size) : 20;
