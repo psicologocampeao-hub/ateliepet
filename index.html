@@ -1724,7 +1724,13 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     var slidesDesktop = parseInt(settings.slides_to_show) || 3;
     var slidesTablet  = parseInt(settings.slides_to_show_tablet)  || (isNested ? 2 : 3);
     var slidesMobile  = parseInt(settings.slides_to_show_mobile)  || (isNested ? 1 : (hasArrows ? 1 : 2));
-    var speed   = parseInt(settings.speed) || (isNested ? 500 : 5000);
+    // autoplay_speed:0 no Elementor pedia um "glide" continuo (delay quase
+    // zero + transicao de 5s). Isso faz o Swiper disparar slideNext() a
+    // cada poucos ms sem esperar a transicao acabar, e o carrossel dispara
+    // descontrolado. Trocamos por um ritmo discreto seguro: para, mostra
+    // por um tempo, desliza rapido pra proxima.
+    var rawAutoplayDelay = parseInt(settings.autoplay_speed) || 0;
+    var speed = rawAutoplayDelay > 0 ? (parseInt(settings.speed) || (isNested ? 500 : 5000)) : 600;
     var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size)
                   ? parseInt(settings.image_spacing_custom.size) : 20;
     var isRtl   = el.getAttribute('dir') === 'rtl';
@@ -1751,7 +1757,7 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
       cfg.rtl = isRtl;
       if (settings.autoplay === 'yes') {
         pendingAutoplay = {
-          delay: parseInt(settings.autoplay_speed) || 60,
+          delay: rawAutoplayDelay > 0 ? rawAutoplayDelay : 3000,
           disableOnInteraction: false,
           pauseOnMouseEnter: settings.pause_on_hover === 'yes',
           reverseDirection: isRtl,
@@ -1830,7 +1836,8 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     var slidesDesktop = parseInt(settings.slides_to_show) || 5;
     var slidesTablet  = parseInt(settings.slides_to_show_tablet) || 3;
     var slidesMobile  = parseInt(settings.slides_to_show_mobile) || 2;
-    var speed   = parseInt(settings.speed) || 5000;
+    var rawAutoplayDelay2 = parseInt(settings.autoplay_speed) || 0;
+    var speed   = rawAutoplayDelay2 > 0 ? (parseInt(settings.speed) || 5000) : 600;
     var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size) ? parseInt(settings.image_spacing_custom.size) : 20;
     var isRtl   = el.getAttribute('dir') === 'rtl';
 
@@ -1840,7 +1847,7 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     el.classList.remove('swiper-initialized', 'swiper-horizontal', 'swiper-rtl', 'swiper-pointer-events');
 
     var pendingAutoplay2 = settings.autoplay === 'yes' ? {
-      delay: parseInt(settings.autoplay_speed) || 60,
+      delay: rawAutoplayDelay2 > 0 ? rawAutoplayDelay2 : 3000,
       disableOnInteraction: false,
       reverseDirection: isRtl,
     } : false;
