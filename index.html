@@ -1724,13 +1724,7 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     var slidesDesktop = parseInt(settings.slides_to_show) || 3;
     var slidesTablet  = parseInt(settings.slides_to_show_tablet)  || (isNested ? 2 : 3);
     var slidesMobile  = parseInt(settings.slides_to_show_mobile)  || (isNested ? 1 : (hasArrows ? 1 : 2));
-    // autoplay_speed:0 no Elementor pedia um "glide" continuo (delay quase
-    // zero + transicao de 5s). Isso faz o Swiper disparar slideNext() a
-    // cada poucos ms sem esperar a transicao acabar, e o carrossel dispara
-    // descontrolado. Trocamos por um ritmo discreto seguro: para, mostra
-    // por um tempo, desliza rapido pra proxima.
-    var rawAutoplayDelay = parseInt(settings.autoplay_speed) || 0;
-    var speed = rawAutoplayDelay > 0 ? (parseInt(settings.speed) || (isNested ? 500 : 5000)) : 600;
+    var speed   = parseInt(settings.speed) || (isNested ? 500 : 5000);
     var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size)
                   ? parseInt(settings.image_spacing_custom.size) : 20;
     var isRtl   = el.getAttribute('dir') === 'rtl';
@@ -1750,19 +1744,18 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
       }
     };
 
-    var pendingAutoplay = false;
-    cfg.autoplay = false;
-
     if (!isNested) {
       cfg.rtl = isRtl;
-      if (settings.autoplay === 'yes') {
-        pendingAutoplay = {
-          delay: rawAutoplayDelay > 0 ? rawAutoplayDelay : 3000,
-          disableOnInteraction: false,
-          pauseOnMouseEnter: settings.pause_on_hover === 'yes',
-          reverseDirection: isRtl,
-        };
-      }
+      // IMPORTANTE: o autoplay precisa nascer configurado aqui, na propria
+      // construcao do Swiper. Liga-lo depois (params.autoplay = X seguido
+      // de autoplay.start()) quebra a espera interna pela transicao e o
+      // carrossel dispara sem controle.
+      cfg.autoplay = settings.autoplay === 'yes' ? {
+        delay: parseInt(settings.autoplay_speed) || 0,
+        disableOnInteraction: false,
+        pauseOnMouseEnter: settings.pause_on_hover === 'yes',
+        reverseDirection: isRtl,
+      } : false;
       if (settings.navigation === 'both' || settings.navigation === 'arrows') {
         var arrowNext = widget.querySelector('.elementor-swiper-button-next');
         var arrowPrev = widget.querySelector('.elementor-swiper-button-prev');
@@ -1773,6 +1766,7 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
         if (dotsEl) cfg.pagination = { el: dotsEl, clickable: true };
       }
     } else {
+      cfg.autoplay = false;
       var navNext = widget.querySelector('.elementor-swiper-button-next');
       var navPrev = widget.querySelector('.elementor-swiper-button-prev');
       var paginationEl = widget.querySelector('.swiper-pagination');
@@ -1780,16 +1774,7 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
       if (paginationEl) cfg.pagination = { el: paginationEl, clickable: true };
     }
 
-    var swiperInstance = new Swiper(el, cfg);
-
-    // So liga o autoplay depois que o Swiper termina de se acomodar
-    // (posicao inicial do loop), evitando a rajada rapida no primeiro load.
-    if (pendingAutoplay) {
-      setTimeout(function () {
-        swiperInstance.params.autoplay = pendingAutoplay;
-        swiperInstance.autoplay.start();
-      }, 400);
-    }
+    new Swiper(el, cfg);
   }
 
   // MutationObserver: patch immediately when Elementor adds swiper-initialized
@@ -1801,6 +1786,19 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     });
   });
 
+  var visibilityObserver = ('IntersectionObserver' in window)
+    ? new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            visibilityObserver.unobserve(entry.target);
+            if (!entry.target.classList.contains('swiper-initialized')) {
+              buildSwiper(entry.target);
+            }
+          }
+        });
+      }, { rootMargin: '200px 0px' })
+    : null;
+
   function setupAll() {
     document.querySelectorAll(SELECTORS).forEach(function(el) {
       // Watch for future swiper-initialized additions by Elementor
@@ -1808,6 +1806,12 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
       // Handle already-initialized ones
       if (el.classList.contains('swiper-initialized')) {
         patchDrag(el);
+        return;
+      }
+      // Constroi (com autoplay incluido) so quando o carrossel estiver
+      // prestes a entrar na tela, em vez de comecar a rodar escondido.
+      if (visibilityObserver) {
+        visibilityObserver.observe(el);
       } else {
         buildSwiper(el);
       }
@@ -1836,8 +1840,7 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     var slidesDesktop = parseInt(settings.slides_to_show) || 5;
     var slidesTablet  = parseInt(settings.slides_to_show_tablet) || 3;
     var slidesMobile  = parseInt(settings.slides_to_show_mobile) || 2;
-    var rawAutoplayDelay2 = parseInt(settings.autoplay_speed) || 0;
-    var speed   = rawAutoplayDelay2 > 0 ? (parseInt(settings.speed) || 5000) : 600;
+    var speed   = parseInt(settings.speed) || 5000;
     var spacing = (settings.image_spacing_custom && settings.image_spacing_custom.size) ? parseInt(settings.image_spacing_custom.size) : 20;
     var isRtl   = el.getAttribute('dir') === 'rtl';
 
@@ -1846,18 +1849,16 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     }
     el.classList.remove('swiper-initialized', 'swiper-horizontal', 'swiper-rtl', 'swiper-pointer-events');
 
-    var pendingAutoplay2 = settings.autoplay === 'yes' ? {
-      delay: rawAutoplayDelay2 > 0 ? rawAutoplayDelay2 : 3000,
-      disableOnInteraction: false,
-      reverseDirection: isRtl,
-    } : false;
-
-    var swiperInstance2 = new Swiper(el, {
+    new Swiper(el, {
       slidesPerView: slidesDesktop,
       spaceBetween:  spacing,
       loop:          settings.infinite === 'yes',
       speed:         speed,
-      autoplay:      false,
+      autoplay: settings.autoplay === 'yes' ? {
+        delay: parseInt(settings.autoplay_speed) || 0,
+        disableOnInteraction: false,
+        reverseDirection: isRtl,
+      } : false,
       rtl:            isRtl,
       allowTouchMove: true,
       grabCursor:     true,
@@ -1868,13 +1869,6 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
         1025: { slidesPerView: slidesDesktop, spaceBetween: spacing },
       }
     });
-
-    if (pendingAutoplay2) {
-      setTimeout(function () {
-        swiperInstance2.params.autoplay = pendingAutoplay2;
-        swiperInstance2.autoplay.start();
-      }, 400);
-    }
   }
 
   // Also run at load + after delay to catch anything Elementor initializes late
