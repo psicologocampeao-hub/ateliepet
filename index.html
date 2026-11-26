@@ -1904,11 +1904,11 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
 (function(){
   function cfg(el){ try{ return JSON.parse(el.getAttribute('data-settings')||'{}'); }catch(e){ return {}; } }
   function num(v,p){ v=parseInt(v,10); return isNaN(v)?p:v; }
-  function iniciaCarrosseis(){
+  function iniciaCarrosseisFiltro(){
     if(typeof Swiper!=='function') return;
     // carrosséis de imagens (contínuos)
     document.querySelectorAll('.elementor-widget-image-carousel').forEach(function(w){
-      var el=w.querySelector('.elementor-image-carousel-wrapper'); if(!el||el.swiper) return;
+      var el=w.querySelector('.elementor-image-carousel-wrapper'); if(!el||el.swiper||!el.dataset.reserva) return;
       var c=cfg(w), gap=(c.image_spacing_custom&&c.image_spacing_custom.size!=='')?num(c.image_spacing_custom.size,20):20;
       el.classList.add('carrossel-continuo');
       new Swiper(el,{loop:c.infinite!=='no', speed:num(c.speed,5000), spaceBetween:gap, allowTouchMove:true,
@@ -1918,7 +1918,7 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
     });
     // carrossel de depoimentos
     document.querySelectorAll('.elementor-widget-n-carousel').forEach(function(w){
-      var el=w.querySelector('.e-n-carousel'); if(!el||el.swiper) return;
+      var el=w.querySelector('.e-n-carousel'); if(!el||el.swiper||!el.dataset.reserva) return;
       var c=cfg(w), gap=(c.image_spacing_custom&&c.image_spacing_custom.size!=='')?num(c.image_spacing_custom.size,20):20;
       var pag=w.querySelector('.swiper-pagination'), nx=w.querySelector('.elementor-swiper-button-next'), pv=w.querySelector('.elementor-swiper-button-prev');
       new Swiper(el,{loop:c.infinite!=='no', speed:num(c.speed,500), spaceBetween:gap,
@@ -1963,8 +1963,14 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tudo); else tudo();
   window.addEventListener('load',tudo);
   // o Swiper desta página chega com atraso (scripts adiados): tenta até ele existir
-  var tentativas=0; (function espera(){ if(typeof Swiper==='function'){ iniciaCarrosseis(); return; } if(++tentativas<80) setTimeout(espera,250); })();
-  ['scroll','touchstart','mousemove','keydown'].forEach(function(ev){ window.addEventListener(ev,function(){ setTimeout(iniciaCarrosseis,300); },{once:true,passive:true}); });
+  // fotos dos carrosséis: carrega pelo próprio navegador (não depende de quem monta o carrossel)
+  function carregaFotos(){ document.querySelectorAll('img.swiper-lazy[data-src]').forEach(function(i){ if(!i.getAttribute('src')){ i.setAttribute('loading','lazy'); i.src=i.getAttribute('data-src'); } }); }
+  carregaFotos(); window.addEventListener('load',carregaFotos);
+  // esta página tem o próprio montador de carrosséis (monta ao chegar na tela);
+  // aqui só entra depois, para algum carrossel que tenha ficado sem montar
+  function reserva(){ document.querySelectorAll('.elementor-image-carousel-wrapper, .e-n-carousel').forEach(function(el){ var r=el.getBoundingClientRect(); if(!el.swiper && r.top<innerHeight+200 && r.bottom>-200){ el.dataset.reserva=1; } }); if(document.querySelector('[data-reserva]')) iniciaCarrosseisReserva(); }
+  function iniciaCarrosseisReserva(){ iniciaCarrosseisFiltro(); }
+  window.addEventListener('load',function(){ setTimeout(function(){ window.addEventListener('scroll',function(){ clearTimeout(window.__res); window.__res=setTimeout(reserva,2500); },{passive:true}); reserva(); },3000); });
 })();
 </script>
 </body>
