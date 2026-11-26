@@ -122,6 +122,18 @@ src="https://www.facebook.com/tr?id=1726718675470815&ev=PageView&noscript=1"
 ></script>
 
 
+<style id="conserto-elementor-css">
+/* Botões: o Elementor só mostrava depois de um script que não existe mais */
+.elementor-invisible{visibility:visible!important}
+.elementor-widget-button[data-settings*="pulse"] .elementor-button{animation:pulso-botao 1.6s ease-in-out infinite}
+@keyframes pulso-botao{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+/* Carrosséis de fotos contínuos */
+.carrossel-continuo .swiper-wrapper{transition-timing-function:linear!important}
+/* FAQ */
+.elementor-toggle .elementor-tab-content{display:none}
+.elementor-toggle .elementor-tab-title{cursor:pointer}
+@media (prefers-reduced-motion:reduce){.elementor-widget-button .elementor-button{animation:none!important}}
+</style>
 </head>
 <body class="wp-singular page-template page-template-elementor_canvas page page-id-2465 wp-embed-responsive wp-theme-twentytwentyfive elementor-default elementor-template-canvas elementor-kit-5 elementor-page elementor-page-2465">
 			<div data-elementor-type="wp-page" data-elementor-id="2465" class="elementor elementor-2465" data-elementor-post-type="page">
@@ -1887,5 +1899,73 @@ var ElementorProFrontendConfig = {"ajaxurl":"","nonce":"dc8129a2ed","urls":{"ass
   });
 })();
 </script>
-	</body>
+	<script id="conserto-elementor">
+/* Conserto: estes recursos dependiam de scripts do site WordPress antigo, que saiu do ar */
+(function(){
+  function cfg(el){ try{ return JSON.parse(el.getAttribute('data-settings')||'{}'); }catch(e){ return {}; } }
+  function num(v,p){ v=parseInt(v,10); return isNaN(v)?p:v; }
+  function iniciaCarrosseis(){
+    if(typeof Swiper!=='function') return;
+    // carrosséis de imagens (contínuos)
+    document.querySelectorAll('.elementor-widget-image-carousel').forEach(function(w){
+      var el=w.querySelector('.elementor-image-carousel-wrapper'); if(!el||el.swiper) return;
+      var c=cfg(w), gap=(c.image_spacing_custom&&c.image_spacing_custom.size!=='')?num(c.image_spacing_custom.size,20):20;
+      el.classList.add('carrossel-continuo');
+      new Swiper(el,{loop:c.infinite!=='no', speed:num(c.speed,5000), spaceBetween:gap, allowTouchMove:true,
+        slidesPerView:num(c.slides_to_show_mobile,2),
+        breakpoints:{768:{slidesPerView:num(c.slides_to_show_tablet,3)},1025:{slidesPerView:num(c.slides_to_show,5)}},
+        autoplay:c.autoplay==='no'?false:{delay:num(c.autoplay_speed,0),disableOnInteraction:false,pauseOnMouseEnter:false}});
+    });
+    // carrossel de depoimentos
+    document.querySelectorAll('.elementor-widget-n-carousel').forEach(function(w){
+      var el=w.querySelector('.e-n-carousel'); if(!el||el.swiper) return;
+      var c=cfg(w), gap=(c.image_spacing_custom&&c.image_spacing_custom.size!=='')?num(c.image_spacing_custom.size,20):20;
+      var pag=w.querySelector('.swiper-pagination'), nx=w.querySelector('.elementor-swiper-button-next'), pv=w.querySelector('.elementor-swiper-button-prev');
+      new Swiper(el,{loop:c.infinite!=='no', speed:num(c.speed,500), spaceBetween:gap,
+        slidesPerView:num(c.slides_to_show_mobile,1),
+        breakpoints:{768:{slidesPerView:num(c.slides_to_show_tablet,3),spaceBetween:gap},1025:{slidesPerView:num(c.slides_to_show,3),spaceBetween:gap}},
+        autoplay:c.autoplay==='no'?false:{delay:num(c.autoplay_speed,5000),disableOnInteraction:false},
+        pagination:pag?{el:pag,clickable:true}:undefined, navigation:(nx&&pv)?{nextEl:nx,prevEl:pv}:undefined});
+    });
+  }
+  // FAQ: abre/fecha cada pergunta
+  function iniciaFAQ(){
+    document.querySelectorAll('.elementor-toggle .elementor-tab-title').forEach(function(t){
+      if(t.dataset.ok) return; t.dataset.ok=1;
+      var abre=function(){ var cont=document.getElementById(t.getAttribute('aria-controls')); var aberto=t.classList.toggle('elementor-active');
+        t.setAttribute('aria-expanded',aberto); if(cont){ cont.style.display=aberto?'block':'none'; cont.classList.toggle('elementor-active',aberto);} };
+      // só age se o próprio Elementor não respondeu ao clique (em páginas onde ele ainda funciona, não interfere)
+      var antes; t.addEventListener('click',function(){ antes=t.classList.contains('elementor-active'); },true);
+      t.addEventListener('click',function(){ setTimeout(function(){ if(t.classList.contains('elementor-active')===antes) abre(); },0); });
+    });
+  }
+  // Cronômetro "evergreen" do Elementor (mesma regra: X segundos por visitante, depois esconde)
+  function iniciaCronometro(){
+    document.querySelectorAll('.elementor-countdown-wrapper').forEach(function(w){
+      if(w.dataset.ok) return; w.dataset.ok=1;
+      var intervalo=num(w.getAttribute('data-evergreen-interval'),0), fim;
+      if(intervalo){ var chave='cronometro-'+(w.closest('[data-id]')||{}).dataset.id; try{ fim=+localStorage.getItem(chave); }catch(e){}
+        if(!fim){ fim=Date.now()+intervalo*1000; try{ localStorage.setItem(chave,fim); }catch(e){} } }
+      else { fim=Date.parse(w.getAttribute('data-date')||''); }
+      if(!fim||isNaN(fim)) return;
+      var d=function(c){ return w.querySelector('.elementor-countdown-'+c); }, dd=d('days'),hh=d('hours'),mm=d('minutes'),ss=d('seconds');
+      function z(n){ return (n<10?'0':'')+n; }
+      (function tic(){
+        var t=Math.max(0,Math.floor((fim-Date.now())/1000)), dias=Math.floor(t/86400), h=Math.floor(t%86400/3600), m=Math.floor(t%3600/60), s=t%60;
+        if(!dd) h+=dias*24; if(!hh) m+=h*60;
+        if(dd) dd.textContent=z(dias); if(hh) hh.textContent=z(h); if(mm) mm.textContent=z(m); if(ss) ss.textContent=z(s);
+        if(t<=0){ var acao=w.getAttribute('data-expire-actions')||''; if(/hide/.test(acao)) w.style.display='none'; return; }
+        setTimeout(tic,1000);
+      })();
+    });
+  }
+  function tudo(){ iniciaFAQ(); iniciaCronometro(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',tudo); else tudo();
+  window.addEventListener('load',tudo);
+  // o Swiper desta página chega com atraso (scripts adiados): tenta até ele existir
+  var tentativas=0; (function espera(){ if(typeof Swiper==='function'){ iniciaCarrosseis(); return; } if(++tentativas<80) setTimeout(espera,250); })();
+  ['scroll','touchstart','mousemove','keydown'].forEach(function(ev){ window.addEventListener(ev,function(){ setTimeout(iniciaCarrosseis,300); },{once:true,passive:true}); });
+})();
+</script>
+</body>
 </html>
